@@ -10,11 +10,41 @@
 <svg width=300 height=300></svg>
 
 <script>
-data_exp = await d3.csv("https://raw.githubusercontent.com/AGraci/agraci.github.io/main/cleaned_data_expenditure.csv");  
+data = await d3.csv("https://raw.githubusercontent.com/AGraci/agraci.github.io/main/cleaned_data.csv");
+data_ex = await d3.csv("https://raw.githubusercontent.com/AGraci/agraci.github.io/main/cleaned_data_expenditure.csv");
+data_le = await d3.csv("https://raw.githubusercontent.com/AGraci/agraci.github.io/main/cleaned_data_le.csv");    
 d3.csv("https://raw.githubusercontent.com/AGraci/agraci.github.io/main/cleaned_data_expenditure.csv", function(data) {
     console.log(data);
 });
 
+var margin = 50;
+var height = 200;
+var tick_values = [10,20,50,100];
+var cx = d3.scaleLog().base(10).domain([10, 150]).range([0, 200]);
+var cy = d3.scaleLog().base(10).domain([10, 150]).range([200, 0]);
+d3.select('svg')
+.append("g").attr("transform","translate("+margin+","+margin+")")
+.selectAll('dot').data(data).enter().append('circle')
+.attr("cx", function (d) { return cx(d.AverageCityMPG); })
+.attr("cy", function (d) { return cy(d.AverageHighwayMPG); })
+.attr("r", function (d) { return parseInt(d.EngineCylinders) + 2; });
+
+d3.select('svg')
+.append("g").attr("transform","translate("+margin+","+margin+")")
+.attr('fill',"none")
+.attr('font-size',10)
+.attr('font-family',"sans-serif")
+.attr('text-anchor',"end")
+.call(d3.axisLeft(cy).tickValues(tick_values).tickFormat(d3.format("~s")));
+
+d3.select('svg')
+.append("g").attr("transform","translate("+margin+",2"+margin+")")
+.attr('fill',"none")
+.attr('font-size',10)
+.attr('font-family',"sans-serif")
+.attr('text-anchor',"middle")
+.call(d3.axisBottom(cx).tickValues(tick_values).tickFormat(d3.format("~s")));
+  
 </script>
 
 </body>
