@@ -6,16 +6,68 @@
 </header>
 <body onload='init()'>
 
-<h1>CS416 Data Viz: Narrative</h1>
-<svg width=500 height=500></svg>
+  <h1>CS416 Data Viz: Narrative</h1>
+  <div id="slide"></div>
 
 <script>
-async function init() {
+  async function init() {
+      // set the dimensions and margins of the graph
+      var margin = {top: 10, right: 30, bottom: 30, left: 60},
+	  width = 460 - margin.left - margin.right,
+	  height = 400 - margin.top - margin.bottom;
+      
+      // append the svg object to the body of the page
+      var svg = d3.select("#slide")
+	  .append("svg")
+	  .attr("width", width + margin.left + margin.right)
+	  .attr("height", height + margin.top + margin.bottom)
+	  .append("g")
+	  .attr("transform",
+		"translate(" + margin.left + "," + margin.top + ")");
+      
+      //Read the data
+      var raw_data = await d3.csv("https://raw.githubusercontent.com/AGraci/agraci.github.io/main/cleaned_data_2019.csv");
+      var data = raw_data.filter(d => d.expenditure != null && d.expectancy != null && d.expenditure != '' && d.expectancy != '');
+      const xdata = data.map(d => d.expenditure);
+      const ydata = data.map(d => d.expectancy);
+      const xextent = d3.extent(xdata)
+      const yextent = d3.extent(ydata)
+      console.log(xextent)
+      console.log(yextent)
+      
+      // Add X axis
+      var x = d3.scaleLinear()
+	  .domain([0, xextent[0]])
+	  .range([ 0, width ]);
+      svg.append("g")
+	  .attr("transform", "translate(0," + height + ")")
+	  .call(d3.axisBottom(x));
+      
+      // Add Y axis
+      var y = d3.scaleLinear()
+	  .domain([yextent[0], yextent[1]])
+	  .range([ height, 0]);
+      svg.append("g")
+	  .call(d3.axisLeft(y));
+      
+      // Add dots
+      svg.append('g')
+	  .selectAll("dot")
+	  .data(data)
+	  .enter()
+	  .append("circle")
+	  .attr("cx", function (d) { return x(d.expenditure); } )
+	  .attr("cy", function (d) { return y(d.expectancy); } )
+	  .attr("r", 1.5)
+	  .style("fill", "#69b3a2")
+  }
+/*
+
 var raw_data = await d3.csv("https://raw.githubusercontent.com/AGraci/agraci.github.io/main/cleaned_data_2019.csv");
 var data = raw_data.filter(d => d.expenditure != null && d.expectancy != null && d.expenditure != '' && d.expectancy != '');    
 const xdata = data.map(d => d.expenditure);
 const ydata = data.map(d => d.expectancy);    
-console.log(data);
+//console.log(data);
 
 var margin = 50;
 var width = 400;
@@ -25,8 +77,8 @@ var xdomain = [0, d3.extent(xdata)[0]]
 var ydomain = [d3.extent(ydata)[0], d3.extent(ydata)[1]]
 console.log(xdomain)
 console.log(ydomain)
-var xrange = [0,width-margin-margin]
-var yrange = [height-margin-margin,0]
+var xrange = [0,width]
+var yrange = [height,0]
 var cx = d3.scaleLinear().domain(xdomain).range(xrange);
 var cy = d3.scaleLinear().domain(ydomain).range(yrange);
 d3.select('svg')
@@ -37,14 +89,14 @@ d3.select('svg')
 .attr("r", function (d) { return 2; });
 
 d3.select('svg')
-.append("g").attr("transform","translate("+margin+","+margin+")")
+	.append("g").attr("transform","translate("+(margin)+","+(margin)+")")
 .call(d3.axisLeft(cy));
 
 d3.select('svg')
-.append("g").attr("transform","translate("+margin+","+(height)+")")
+.append("g").attr("transform","translate("+(margin)+","+(height+margin)+")")
 .call(d3.axisBottom(cx));
 }
-</script>
-
+*/
+  </script>
 </body>
 </html>
