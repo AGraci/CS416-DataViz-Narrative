@@ -22,12 +22,14 @@
 	  .attr("width", width + margin.left + margin.right)
 	  .attr("height", height + margin.top + margin.bottom)
 	  .append("g")
+          .attr("style", "outline: thin solid red;")
 	  .attr("transform",
 		"translate(" + margin.left + "," + margin.top + ")");
       
       //Read the data
       var raw_data = await d3.csv("https://raw.githubusercontent.com/AGraci/agraci.github.io/main/cleaned_data_2019.csv");
       var data = raw_data.filter(d => d.expenditure != null && d.expectancy != null && d.expenditure != '' && d.expectancy != '');
+      var data = data.filter(d => d.income != null && d.income != '');
       const xdata = data.map(d => d.expenditure);
       const ydata = data.map(d => d.expectancy);
       const xextent = d3.extent(xdata)
@@ -49,6 +51,18 @@
 	  .range([ height, 0]);
       svg.append("g")
 	  .call(d3.axisLeft(y));
+
+      // Add color scale
+      const incomes = data.map(d => d.income);
+      console.log(d3.extent(incomes))
+      console.log(incomes)
+      const color = d3.scaleOrdinal()
+	    .domain(incomes)
+	    .range(d3.schemeSet1)
+      //["gold", "blue", "green", "yellow", "black", "grey", "darkgreen", "pink", "brown", "slateblue", "grey1", "orange"])
+      //const color = d3.scaleSequential()
+//	    .domain(d3.extent(incomes))//
+//	    .interpolator(d3.schemeSet1);
       
       // Add dots
       svg.append('g')
@@ -56,10 +70,24 @@
 	  .data(data)
 	  .enter()
 	  .append("circle")
+          .attr("id", "circleBasicTooltip")
 	  .attr("cx", function (d) { return x(d.expenditure); } )
 	  .attr("cy", function (d) { return y(d.expectancy); } )
 	  .attr("r", 1.5)
-	  .style("fill", "#69b3a2")
+	  .attr("fill", function (d) { return color(d.income); } )
+
+      // create a tooltip
+      var tooltip = d3.select("#slide")
+	  .append("div")
+	  .style("position", "absolute")
+	  .style("visibility", "hidden")
+	  .text("I'm a circle!");
+
+      //
+      d3.select("#circleBasicTooltip")
+	  .on("mouseover", function(){return tooltip.style("visibility", "visible");})
+	  .on("mousemove", function(){return tooltip.style("top", (event.pageY-800)+"px").style("left",(event.pageX-800)+"px");})
+	  .on("mouseout", function(){return tooltip.style("visibility", "hidden");});
   }
 /*
 
