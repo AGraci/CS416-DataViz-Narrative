@@ -1,0 +1,11 @@
+#visualization {
+    width: auto;
+    overflow: hidden;
+}
+#scenes {
+    width: auto;
+    float:left;
+}
+#controls {
+    overflow: hidden;
+}

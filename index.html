@@ -1,18 +1,49 @@
 <!DOCTYPE html>
 <html>
-<header>
+<head>
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <script src="https://rawgit.com/susielu/d3-annotation/master/d3-annotation.min.js"></script>
-</header>
-<body onload='init_exp()'>
-
-  <h1>CS416 Data Viz: Narrative</h1>
-  <button onclick='update(life_expectancy)'>1</button>
-  <button onclick='update(mr_infant)'>2</button>
-  <button onclick='update(mr_mat)'>3</button>
-  <div id="slide"></div>
-  <div id="controls"></div>
-
+  <link type="text/css" rel="stylesheet" href="style.css">
+</head>
+<body onload='init()'>
+  <h1>Narrative Visualization: US Healthcare Outcomes</h1>
+  Course: CS 416 Data Visualization </br>
+  School: University of Illinois at Urbana-Champaign </br>
+  Semester: Summer 2022 </br>
+  Student Contact: graci@illinois.edu </br>
+  Essay: <a href="https://agraci.github.io/">todo.pdf</a>
+  <div id="visualization">
+    <div id="scenes">
+      <h2>Slides</h2>
+      <button onclick='update(life_expectancy)'>1</button>
+      <button onclick='update(mr_infant)'>2</button>
+      <button onclick='update(mr_mat)'>3</button>    
+      <div id="slide"></div>
+    </div>
+    <div id="controls">
+      <h2>Parameters</h2>
+      <h3>Variables</h3>
+      <input type="radio" id="variables" name="variables" value="life_expectancy" onclick='update(life_expectancy)'>
+      <label for="variables">Life expectancy at birth, total (years)</label><br>
+      <input type="radio" id="variables" name="variables" value="mr_infant" onclick='update(mr_infant)'>
+      <label for="variables">Survival rate, infant (per 1,000 live births)</label><br>
+      <input type="radio" id="variables" name="variables" value="mr_mat" onclick='update(mr_mat)'>
+      <label for="variables">Maternal survival ratio (modeled estimate, per 100,000 live births)</label><br>
+      <h3>Filters</h3>
+      <input type="checkbox" id="variables" name="variables" value="life_expectancy" onclick='update(life_expectancy)'>
+      <label for="variables">High Income</label><br>
+    </div>
+  </div>
+  <div>
+    <h2>About the data</h2>
+    Data was collected from the following sources:
+    <ul>
+      <li><a href="https://data.worldbank.org/indicator/SP.DYN.LE00.IN">Life expectancy at birth, total (years)</a></li>
+      <li><a href="https://data.worldbank.org/indicator/SP.DYN.IMRT.IN">Mortality rate, infant (per 1,000 live births)</a></li>
+      <li><a href="https://data.worldbank.org/indicator/SH.STA.MMRT">Maternal mortality ratio (modeled estimate, per 100,000 live births)</a></li>
+    </ul>
+    In order to maintain consistency of axes, mortality rates have been inverted reinterpreted as survival rates.
+  </div>
 <script>
 
   // set the dimensions and margins of the graph
@@ -26,31 +57,30 @@
       .attr("width", width + margin.left + margin.right)
       .attr("height", height + margin.top + margin.bottom)
       .append("g")
-      .attr("style", "outline: thin solid red;")
       .attr("transform",
 	    "translate(" + margin.left + "," + margin.top + ")");
-  
-  var raw_data = {}
+
+  // Functions for the different y variables
   var life_expectancy = function(d){return d.expectancy};
   var mr_infant = function(d){return d.mr_infant_inv};
-  var mr_mat = function(d){return d.mr_mat_2017};  
+  var mr_mat = function(d){return d.mr_mat_2017_inv};  
 
-  async function init_exp() {
-      // Clear old scenes
-      //d3.selectAll('svg').remove();
-
-      //Read the data
+  // Reads in the data and initializes to the first slide
+  var raw_data = {}
+  async function init() {
+      
+      // Read the data
       raw_data = await d3.csv("https://raw.githubusercontent.com/AGraci/agraci.github.io/main/cleaned_data_2019.csv");
       raw_data = raw_data.filter(d => d.expenditure != null && d.expenditure != '');
       raw_data = raw_data.filter(d => d.income != null && d.income != '');
-      
+
+      // Initialize y-axis and markers (will be modified on update)
       var y = d3.scaleLinear()
 	  .domain([0, 1])
 	  .range([ height, 0]);
       svg.append("g")
 	  .attr("id", "y-axis")
 	  .call(d3.axisLeft(y));
-
       svg.append('g')
       	  .attr("id", "dots")
 	  .selectAll("dot")
@@ -58,9 +88,11 @@
       
       update(life_expectancy);
   };
-  
+
+  // Updates the visualization based on user settings
   function update(variable) {
       var data = raw_data.filter(d => variable(d) != null && variable(d) != '');
+      console.log(data)
       const xdata = data.map(d => d.expenditure);
       const ydata = data.map(d => variable(d));
       
@@ -73,7 +105,8 @@
 	  .call(d3.axisBottom(x));
       
       // Add Y axis
-      var y = d3.scaleLinear()
+      var y = d3.scalePow()
+	  .exponent(10)
 	  .domain([Math.min(...ydata), Math.max(...ydata)])
 	  .range([ height, 0]);
       svg.select("#y-axis")
