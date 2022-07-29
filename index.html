@@ -4,47 +4,46 @@
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <script src="https://rawgit.com/susielu/d3-annotation/master/d3-annotation.min.js"></script>
 </header>
-<body>
+<body onload='init()'>
 
 <h1>CS416 Data Viz: Narrative</h1>
-<svg width=300 height=300></svg>
+<svg width=500 height=500></svg>
 
 <script>
-data = await d3.csv("https://raw.githubusercontent.com/AGraci/agraci.github.io/main/cleaned_data.csv");
-data_ex = await d3.csv("https://raw.githubusercontent.com/AGraci/agraci.github.io/main/cleaned_data_expenditure.csv");
-data_le = await d3.csv("https://raw.githubusercontent.com/AGraci/agraci.github.io/main/cleaned_data_le.csv");    
-d3.csv("https://raw.githubusercontent.com/AGraci/agraci.github.io/main/cleaned_data_expenditure.csv", function(data) {
-    console.log(data);
-});
+async function init() {
+var raw_data = await d3.csv("https://raw.githubusercontent.com/AGraci/agraci.github.io/main/cleaned_data_2019.csv");
+var data = raw_data.filter(d => d.expenditure != null && d.expectancy != null && d.expenditure != '' && d.expectancy != '');    
+const xdata = data.map(d => d.expenditure);
+const ydata = data.map(d => d.expectancy);    
+console.log(data);
 
 var margin = 50;
-var height = 200;
+var width = 400;
+var height = 400;
 var tick_values = [10,20,50,100];
-var cx = d3.scaleLog().base(10).domain([10, 150]).range([0, 200]);
-var cy = d3.scaleLog().base(10).domain([10, 150]).range([200, 0]);
+var xdomain = [0, d3.extent(xdata)[0]]
+var ydomain = [d3.extent(ydata)[0], d3.extent(ydata)[1]]
+console.log(xdomain)
+console.log(ydomain)
+var xrange = [0,width-margin-margin]
+var yrange = [height-margin-margin,0]
+var cx = d3.scaleLinear().domain(xdomain).range(xrange);
+var cy = d3.scaleLinear().domain(ydomain).range(yrange);
 d3.select('svg')
 .append("g").attr("transform","translate("+margin+","+margin+")")
 .selectAll('dot').data(data).enter().append('circle')
-.attr("cx", function (d) { return cx(d.AverageCityMPG); })
-.attr("cy", function (d) { return cy(d.AverageHighwayMPG); })
-.attr("r", function (d) { return parseInt(d.EngineCylinders) + 2; });
+.attr("cx", function (d) { return cx(d.expenditure); })
+.attr("cy", function (d) { return cy(d.expectancy); })
+.attr("r", function (d) { return 2; });
 
 d3.select('svg')
 .append("g").attr("transform","translate("+margin+","+margin+")")
-.attr('fill',"none")
-.attr('font-size',10)
-.attr('font-family',"sans-serif")
-.attr('text-anchor',"end")
-.call(d3.axisLeft(cy).tickValues(tick_values).tickFormat(d3.format("~s")));
+.call(d3.axisLeft(cy));
 
 d3.select('svg')
-.append("g").attr("transform","translate("+margin+",2"+margin+")")
-.attr('fill',"none")
-.attr('font-size',10)
-.attr('font-family',"sans-serif")
-.attr('text-anchor',"middle")
-.call(d3.axisBottom(cx).tickValues(tick_values).tickFormat(d3.format("~s")));
-  
+.append("g").attr("transform","translate("+margin+","+(height)+")")
+.call(d3.axisBottom(cx));
+}
 </script>
 
 </body>
