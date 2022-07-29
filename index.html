@@ -6,7 +6,7 @@
   <link type="text/css" rel="stylesheet" href="style.css">
 </head>
 <body onload='init()'>
-  <h1>Narrative Visualization: US Healthcare Outcomes</h1>
+  <h1>Narrative Visualization: Healthcare Outcomes vs. Expense</h1>
   Course: CS 416 Data Visualization </br>
   School: University of Illinois at Urbana-Champaign </br>
   Semester: Summer 2022 </br>
@@ -15,22 +15,28 @@
   <div id="visualization">
     <div id="scenes">
       <h2>Slides</h2>
-      <button onclick='update(life_expectancy)'>1</button>
-      <button onclick='update(mr_infant)'>2</button>
-      <button onclick='update(mr_mat)'>3</button>    
+      <button class="slide-opt" id="slide-1" onclick='slide_1()'>1</button>
+      <button class="slide-opt" id="slide-2" onclick='slide_2()'>2</button>
+      <button class="slide-opt" id="slide-3" onclick='slide_3()'>3</button>    
       <div id="slide"></div>
     </div>
     <div id="controls">
       <h2>Parameters</h2>
       <h3>Variables</h3>
-      <input type="radio" id="variables" name="variables" value="life_expectancy" onclick='update(life_expectancy)'>
-      <label for="variables">Life expectancy at birth, total (years)</label><br>
-      <input type="radio" id="variables" name="variables" value="mr_infant" onclick='update(mr_infant)'>
-      <label for="variables">Survival rate, infant (per 1,000 live births)</label><br>
-      <input type="radio" id="variables" name="variables" value="mr_mat" onclick='update(mr_mat)'>
-      <label for="variables">Maternal survival ratio (modeled estimate, per 100,000 live births)</label><br>
+      <input type="radio" id="variables1" name="variables" value="life_expectancy" onclick='update_variable(life_expectancy)'>
+      <label for="variables1">Life expectancy at birth, total [2019]</label><br>
+      <input type="radio" id="variables2" name="variables" value="mr_infant" onclick='update_variable(mr_infant)'>
+      <label for="variables2">Survival rate, infant (per 1,000 live births) [2019]</label><br>
+      <input type="radio" id="variables3" name="variables" value="mr_mat" onclick='update_variable(mr_mat)'>
+      <label for="variables3">Maternal survival ratio (modeled estimate, per 100,000 live births) [2017]</label><br>
       <h3>Filters</h3>
-      <input type="checkbox" id="variables" name="variables" value="life_expectancy" onclick='update(life_expectancy)'>
+      <input type="checkbox" id="income_filter_1" onclick="update_filter(income_low, 'income_filter_1')">
+      <label for="variables">Low Income</label><br>
+      <input type="checkbox" id="income_filter_2" onclick="update_filter(income_lm, 'income_filter_2')">      
+      <label for="variables">Lower Middle Income</label><br>
+      <input type="checkbox" id="income_filter_3" onclick="update_filter(income_um, 'income_filter_3')">      
+      <label for="variables">Upper Middle Income</label><br>
+      <input type="checkbox" id="income_filter_4" onclick="update_filter(income_high, 'income_filter_4')">
       <label for="variables">High Income</label><br>
     </div>
   </div>
@@ -47,8 +53,8 @@
 <script>
 
   // set the dimensions and margins of the graph
-  var margin = {top: 10, right: 30, bottom: 30, left: 60},
-      width = 460 - margin.left - margin.right,
+  var margin = {top: 10, right: 30, bottom: 50, left: 50},
+      width = 600 - margin.left - margin.right,
       height = 400 - margin.top - margin.bottom;
   
   // append the svg object to the body of the page
@@ -63,8 +69,20 @@
   // Functions for the different y variables
   var life_expectancy = function(d){return d.expectancy};
   var mr_infant = function(d){return d.mr_infant_inv};
-  var mr_mat = function(d){return d.mr_mat_2017_inv};  
-
+  var mr_mat = function(d){return d.mr_mat_2017_inv};
+  var current_ind_var = life_expectancy;
+  
+  // Filters for different income levels
+  const income_low = "Low income";
+  const income_lm = "Lower middle income"
+  const income_um = "Upper middle income"
+  const income_high = "High income"
+  var income_filters = new Map();
+  income_filters.set(income_low, false);
+  income_filters.set(income_lm, false);
+  income_filters.set(income_um, false);
+  income_filters.set(income_high, false);  
+  
   // Reads in the data and initializes to the first slide
   var raw_data = {}
   async function init() {
@@ -86,13 +104,77 @@
 	  .selectAll("dot")
 	  .data([])
       
-      update(life_expectancy);
+      slide_1();
   };
 
+  function update_variable(variable) {
+      current_ind_var = variable;
+      update();
+  };
+  
+  function update_filter(income_level, id) {
+      val = document.getElementById(id).checked;
+      income_filters.set(income_level, val);
+      update();
+  };
+  
+  // Checks if the settings/triggers match an existing scene
+  function check_scene() {
+      var variable = current_ind_var;
+      document.getElementById('income_filter_1').checked = income_filters.get(income_low);
+      document.getElementById('income_filter_2').checked = income_filters.get(income_lm);
+      document.getElementById('income_filter_3').checked = income_filters.get(income_um);
+      document.getElementById('income_filter_4').checked = income_filters.get(income_high);      
+
+      if (variable == life_expectancy) {
+	  document.getElementById("variables1").checked = true;
+	  var matches_slide = income_filters.get(income_low) &&
+	      income_filters.get(income_lm) &&
+	      income_filters.get(income_um) &&
+	      income_filters.get(income_high);
+	  if(matches_slide){
+	      document.getElementById("slide-1").style.backgroundColor = "gray";
+	      document.getElementById("slide-2").style.backgroundColor = "white";
+	      document.getElementById("slide-3").style.backgroundColor = "white";
+	  }
+      } else if (variable == mr_infant) {
+	  document.getElementById("variables2").checked = true;
+	  var matches_slide = !income_filters.get(income_low) &&
+	      !income_filters.get(income_lm) &&
+	      !income_filters.get(income_um) &&
+	      income_filters.get(income_high);
+	  if(matches_slide){
+	      document.getElementById("slide-1").style.backgroundColor = "white";
+	      document.getElementById("slide-2").style.backgroundColor = "gray";
+	      document.getElementById("slide-3").style.backgroundColor = "white";
+	  }
+      } else if (variable == mr_mat) {
+	  document.getElementById("variables3").checked = true;
+	  var matches_slide = !income_filters.get(income_low) &&
+	      !income_filters.get(income_lm) &&
+	      !income_filters.get(income_um) &&
+	      income_filters.get(income_high);
+	  if(matches_slide){
+	      document.getElementById("slide-1").style.backgroundColor = "white";
+	      document.getElementById("slide-2").style.backgroundColor = "white";
+	      document.getElementById("slide-3").style.backgroundColor = "gray";
+	  }
+      }
+  };   
+  
   // Updates the visualization based on user settings
-  function update(variable) {
+  function update() {
+      var variable = current_ind_var;
+      check_scene();
+      
       var data = raw_data.filter(d => variable(d) != null && variable(d) != '');
-      console.log(data)
+
+      // Apply income filters
+      data = income_filters.get(income_low) ? data : data.filter(d => d.income != income_low);
+      data = income_filters.get(income_lm) ? data : data.filter(d => d.income != income_lm);
+      data = income_filters.get(income_um) ? data : data.filter(d => d.income != income_um);
+      data = income_filters.get(income_high) ? data : data.filter(d => d.income != income_high);
+      
       const xdata = data.map(d => d.expenditure);
       const ydata = data.map(d => variable(d));
       
@@ -103,6 +185,12 @@
       svg.append("g")
 	  .attr("transform", "translate(0," + height + ")")
 	  .call(d3.axisBottom(x));
+      svg.append("text")
+	  .attr("class", "x-label")
+	  .attr("text-anchor", "center")
+	  .attr("x", width/5)
+	  .attr("y", height+35)
+	  .text("Current health expenditure per capita (current US$)");
       
       // Add Y axis
       var y = d3.scalePow()
@@ -114,11 +202,11 @@
 	  .call(d3.axisLeft(y));
 
       // Add color scale
-      const incomes = data.map(d => d.income);
+      const incomes = raw_data.map(d => d.income);
       const color = d3.scaleOrdinal()
 	    .domain(incomes)
 	    .range(d3.schemeSet1)
-
+      
       // Define the div for the tooltip
       var div = d3.select("body").append("div")	
 	  .attr("class", "tooltip")				
@@ -140,7 +228,7 @@
       circle.enter().append("circle")
 	  .attr("cx", function (d) { return x(d.expenditure); } )
 	  .attr("cy", function (d) { return y(variable(d)); } )
-	  .attr("r", 1.5)
+	  .attr("r", 2)
 	  .attr("fill", function (d) { return color(d.income); } )
 	  .on("mouseover", function(e,d) {
 	      console.log(d)
@@ -157,6 +245,36 @@
                   .style("opacity", 0);	
 	  });
   };
+
+  // Slide 1 presets
+  function slide_1() {
+      income_filters.set(income_low, true);
+      income_filters.set(income_lm, true);
+      income_filters.set(income_um, true);
+      income_filters.set(income_high, true);
+      current_ind_var = life_expectancy;
+      update();
+  };
+
+  // Slide 2 presets
+  function slide_2() {
+      income_filters.set(income_low, false);
+      income_filters.set(income_lm, false);
+      income_filters.set(income_um, false);
+      income_filters.set(income_high, true);              
+      current_ind_var = mr_infant;
+      update();
+  };
+
+  // Slide 3 presets
+  function slide_3() {
+      income_filters.set(income_low, false);
+      income_filters.set(income_lm, false);
+      income_filters.set(income_um, false);
+      income_filters.set(income_high, true);
+      current_ind_var = mr_mat;
+      update();
+  };  
   </script>
 </body>
 </html>
