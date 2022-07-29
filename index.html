@@ -59,10 +59,13 @@
       const color = d3.scaleOrdinal()
 	    .domain(incomes)
 	    .range(d3.schemeSet1)
-      //["gold", "blue", "green", "yellow", "black", "grey", "darkgreen", "pink", "brown", "slateblue", "grey1", "orange"])
-      //const color = d3.scaleSequential()
-//	    .domain(d3.extent(incomes))//
-//	    .interpolator(d3.schemeSet1);
+
+      // Define the div for the tooltip
+      var div = d3.select("body").append("div")	
+	  .attr("class", "tooltip")				
+	  .style("opacity", 0);
+
+      //var mouseover1 = 
       
       // Add dots
       svg.append('g')
@@ -70,24 +73,24 @@
 	  .data(data)
 	  .enter()
 	  .append("circle")
-          .attr("id", "circleBasicTooltip")
 	  .attr("cx", function (d) { return x(d.expenditure); } )
 	  .attr("cy", function (d) { return y(d.expectancy); } )
 	  .attr("r", 1.5)
 	  .attr("fill", function (d) { return color(d.income); } )
-
-      // create a tooltip
-      var tooltip = d3.select("#slide")
-	  .append("div")
-	  .style("position", "absolute")
-	  .style("visibility", "hidden")
-	  .text("I'm a circle!");
-
-      //
-      d3.select("#circleBasicTooltip")
-	  .on("mouseover", function(){return tooltip.style("visibility", "visible");})
-	  .on("mousemove", function(){return tooltip.style("top", (event.pageY-800)+"px").style("left",(event.pageX-800)+"px");})
-	  .on("mouseout", function(){return tooltip.style("visibility", "hidden");});
+	  .on("mouseover", function(d) {
+	      console.log(d)
+              div.transition()		
+                  .duration(200)		
+                  .style("opacity", .9);		
+              div.html(d.name + "<br/>"  + d.expenditure)	
+                  .style("left", (200) + "px")		
+                  .style("top", (200) + "px");	
+          })					
+          .on("mouseout", function(d) {		
+              div.transition()		
+                  .duration(500)		
+                  .style("opacity", 0);	
+	  });
   }
 /*
 
