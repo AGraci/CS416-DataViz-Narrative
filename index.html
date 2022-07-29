@@ -4,44 +4,64 @@
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <script src="https://rawgit.com/susielu/d3-annotation/master/d3-annotation.min.js"></script>
 </header>
-<body onload='init_imr()'>
+<body onload='init_exp()'>
 
   <h1>CS416 Data Viz: Narrative</h1>
-  <button onclick='init_exp()'>1</button>
-  <button onclick='init_imr()'>2</button>
+  <button onclick='update(life_expectancy)'>1</button>
+  <button onclick='update(mr_infant)'>2</button>
   <button onclick='init_mat()'>3</button>
   <div id="slide"></div>
+  <div id="controls"></div>
 
 <script>
+
+  // set the dimensions and margins of the graph
+  var margin = {top: 10, right: 30, bottom: 30, left: 60},
+      width = 460 - margin.left - margin.right,
+      height = 400 - margin.top - margin.bottom;
+  
+  // append the svg object to the body of the page
+  var svg = d3.select("#slide")
+      .append("svg")
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom)
+      .append("g")
+      .attr("style", "outline: thin solid red;")
+      .attr("transform",
+	    "translate(" + margin.left + "," + margin.top + ")");
+  
+  var raw_data = {}
+  var life_expectancy = function(d){return d.expectancy};
+  var mr_infant = function(d){return d.mr_infant};  
+
   async function init_exp() {
       // Clear old scenes
-      d3.selectAll('svg').remove();
-      
-      // set the dimensions and margins of the graph
-      var margin = {top: 10, right: 30, bottom: 30, left: 60},
-	  width = 460 - margin.left - margin.right,
-	  height = 400 - margin.top - margin.bottom;
+      //d3.selectAll('svg').remove();
 
-      // append the svg object to the body of the page
-      var svg = d3.select("#slide")
-	  .append("svg")
-	  .attr("width", width + margin.left + margin.right)
-	  .attr("height", height + margin.top + margin.bottom)
-	  .append("g")
-          .attr("style", "outline: thin solid red;")
-	  .attr("transform",
-		"translate(" + margin.left + "," + margin.top + ")");
-      
       //Read the data
-      var raw_data = await d3.csv("https://raw.githubusercontent.com/AGraci/agraci.github.io/main/cleaned_data_2019.csv");
-      var data = raw_data.filter(d => d.expenditure != null && d.expectancy != null && d.expenditure != '' && d.expectancy != '');
-      var data = data.filter(d => d.income != null && d.income != '');
+      raw_data = await d3.csv("https://raw.githubusercontent.com/AGraci/agraci.github.io/main/cleaned_data_2019.csv");
+      raw_data = raw_data.filter(d => d.expenditure != null && d.expenditure != '');
+      raw_data = raw_data.filter(d => d.income != null && d.income != '');
+      
+      var y = d3.scaleLinear()
+	  .domain([0, 1])
+	  .range([ height, 0]);
+      svg.append("g")
+	  .attr("id", "y-axis")
+	  .call(d3.axisLeft(y));
+
+      svg.append('g')
+      	  .attr("id", "dots")
+	  .selectAll("dot")
+	  .data([])
+      
+      update(life_expectancy);
+  };
+  
+  function update(variable) {
+      var data = raw_data.filter(d => variable(d) != null && variable(d) != '');
       const xdata = data.map(d => d.expenditure);
-      const ydata = data.map(d => d.expectancy);
-      const xextent = d3.extent(xdata)
-      const yextent = d3.extent(ydata)
-      console.log(xextent)
-      console.log(yextent)
+      const ydata = data.map(d => variable(d));
       
       // Add X axis
       var x = d3.scaleLinear()
@@ -55,7 +75,8 @@
       var y = d3.scaleLinear()
 	  .domain([Math.min(...ydata), Math.max(...ydata)])
 	  .range([ height, 0]);
-      svg.append("g")
+      svg.select("#y-axis")
+	  .transition()
 	  .call(d3.axisLeft(y));
 
       // Add color scale
@@ -70,13 +91,21 @@
 	  .style("opacity", 0);
       
       // Add dots
-      svg.append('g')
-	  .selectAll("dot")
-	  .data(data)
-	  .enter()
-	  .append("circle")
+      var circle = svg.select("#dots")
+	  .selectAll("circle")
+	  .data(data, function(d){ return d.code; });
+      circle.exit()
+	  .transition()
+	  .attr("r", 0)
+	  .remove();
+
+      circle.transition()
+      	  .attr("cx", function (d) { return x(d.expenditure); } )
+	  .attr("cy", function (d) { return y(variable(d)); } );
+      
+      circle.enter().append("circle")
 	  .attr("cx", function (d) { return x(d.expenditure); } )
-	  .attr("cy", function (d) { return y(d.expectancy); } )
+	  .attr("cy", function (d) { return y(variable(d)); } )
 	  .attr("r", 1.5)
 	  .attr("fill", function (d) { return color(d.income); } )
 	  .on("mouseover", function(e,d) {
@@ -84,7 +113,7 @@
               div.transition()		
                   .duration(200)		
                   .style("opacity", .9);		
-              div.html(d.name + "<br/>"  + d.expenditure)	
+              div.html(d.name + "<br/>"  + d.expenditure + "<br/>" + variable(d))	
                   .style("left", (200) + "px")		
                   .style("top", (200) + "px");	
           })					
@@ -93,6 +122,7 @@
                   .duration(500)		
                   .style("opacity", 0);	
 	  });
+
   };
   async function init_imr() {
       // Clear old scenes
