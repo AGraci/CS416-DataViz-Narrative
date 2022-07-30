@@ -103,6 +103,11 @@
       	  .attr("id", "dots")
 	  .selectAll("dot")
 	  .data([])
+
+      // Initialize area for annotations
+      svg.append("g")
+      	  .attr("id", "annotations")
+	  .attr("class", "annotation-group");
       
       slide_1();
   };
@@ -193,8 +198,7 @@
 	  .text("Current health expenditure per capita (current US$)");
       
       // Add Y axis
-      var y = d3.scalePow()
-	  .exponent(10)
+      var y = d3.scaleLinear()
 	  .domain([Math.min(...ydata), Math.max(...ydata)])
 	  .range([ height, 0]);
       svg.select("#y-axis")
@@ -244,8 +248,53 @@
                   .duration(500)		
                   .style("opacity", 0);	
 	  });
-  };
 
+      // Update the annotations
+      var usa = data.find(d => d.code == 'USA');
+      if (usa)
+      {
+	  const by_expenditure = data.sort(function(a, b){return b.expenditure - a.expenditure});
+	  const x_ranking = by_expenditure.findIndex(d => d.code == 'USA') + 1;
+	  const by_outcome = data.sort(function(a, b){return variable(b) - variable(a)});
+	  const y_ranking = by_outcome.findIndex(d => d.code == 'USA') + 1;
+	  const outcome_label = (variable == life_expectancy) ? "life expectancy"
+		: (variable == mr_infant) ? "infant survival rate" : "maternal survival rate";
+	  
+	  const type = d3.annotationLabel
+	  const annotations = [{
+	      note: {
+		  label: "#" + x_ranking + " in expenditure #" + y_ranking + " in " + outcome_label,
+		  bgPadding: 20,
+		  title: "United States"
+	      },
+	      data: usa,
+	      dy: 50,
+	      dx: -150
+	  }];
+	  const makeAnnotations = d3.annotation()
+		.editMode(true)
+		.notePadding(15)
+		.type(type)
+		.accessors({
+		    x: d => x(d.expenditure),
+		    y: d => y(variable(d))
+		})
+		.accessorsInverse({
+		    date: d => timeFormat(x.invert(d.x)),
+		close: d => y.invert(d.y)
+		})
+		.annotations(annotations);
+	  
+	  svg.select("#annotations")
+      	      .call(makeAnnotations);
+      } else {
+	  const makeAnnotations = d3.annotation()
+		.annotations([]);
+	  svg.select("#annotations")
+      	      .call(makeAnnotations);
+      }
+  };
+  
   // Slide 1 presets
   function slide_1() {
       income_filters.set(income_low, true);

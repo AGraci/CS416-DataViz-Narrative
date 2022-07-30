@@ -9,9 +9,3 @@
 #controls {
     overflow: hidden;
 }
-button:active{
-    background:olive;
-}
-button:checked{
-    background:olive;
-}
