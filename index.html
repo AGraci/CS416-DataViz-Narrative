@@ -11,7 +11,8 @@
   School: University of Illinois at Urbana-Champaign </br>
   Semester: Summer 2022 </br>
   Student Contact: graci@illinois.edu </br>
-  Essay: <a href="https://agraci.github.io/">todo.pdf</a>
+  Essay: <a href="https://github.com/AGraci/agraci.github.io/blob/main/AGraci_CS416_NarrativeVisualizationEssay_20220730.pdf">
+    AGraci_CS416_NarrativeVisualizationEssay_20220730.pdf</a>
   <div id="visualization">
     <div id="scenes">
       <h2>Slides</h2>
@@ -65,7 +66,7 @@
       .append("g")
       .attr("transform",
 	    "translate(" + margin.left + "," + margin.top + ")");
-
+  
   // Functions for the different y variables
   var life_expectancy = function(d){return d.expectancy};
   var mr_infant = function(d){return d.mr_infant_inv};
@@ -91,7 +92,7 @@
       raw_data = await d3.csv("https://raw.githubusercontent.com/AGraci/agraci.github.io/main/cleaned_data_2019.csv");
       raw_data = raw_data.filter(d => d.expenditure != null && d.expenditure != '');
       raw_data = raw_data.filter(d => d.income != null && d.income != '');
-
+      
       // Initialize y-axis and markers (will be modified on update)
       var y = d3.scaleLinear()
 	  .domain([0, 1])
@@ -111,7 +112,7 @@
       
       slide_1();
   };
-
+  
   function update_variable(variable) {
       current_ind_var = variable;
       update();
@@ -130,7 +131,7 @@
       document.getElementById('income_filter_2').checked = income_filters.get(income_lm);
       document.getElementById('income_filter_3').checked = income_filters.get(income_um);
       document.getElementById('income_filter_4').checked = income_filters.get(income_high);      
-
+      
       if (variable == life_expectancy) {
 	  document.getElementById("variables1").checked = true;
 	  var matches_slide = income_filters.get(income_low) &&
@@ -171,9 +172,11 @@
   function update() {
       var variable = current_ind_var;
       check_scene();
+      const outcome_label = (variable == life_expectancy) ? "life expectancy"
+	    : (variable == mr_infant) ? "infant survival rate" : "maternal survival rate";
       
       var data = raw_data.filter(d => variable(d) != null && variable(d) != '');
-
+      
       // Apply income filters
       data = income_filters.get(income_low) ? data : data.filter(d => d.income != income_low);
       data = income_filters.get(income_lm) ? data : data.filter(d => d.income != income_lm);
@@ -204,7 +207,7 @@
       svg.select("#y-axis")
 	  .transition()
 	  .call(d3.axisLeft(y));
-
+      
       // Add color scale
       const incomes = raw_data.map(d => d.income);
       const color = d3.scaleOrdinal()
@@ -234,19 +237,9 @@
 	  .attr("cy", function (d) { return y(variable(d)); } )
 	  .attr("r", 2)
 	  .attr("fill", function (d) { return color(d.income); } )
-	  .on("mouseover", function(e,d) {
-	      console.log(d)
-              div.transition()		
-                  .duration(200)		
-                  .style("opacity", .9);		
-              div.html(d.name + "<br/>"  + d.expenditure + "<br/>" + variable(d))	
-                  .style("left", (200) + "px")		
-                  .style("top", (200) + "px");	
-          })					
-          .on("mouseout", function(e,d) {		
-              div.transition()		
-                  .duration(500)		
-                  .style("opacity", 0);	
+	  .append("title")
+	  .text(function(d) {
+	      return d.name + "\n" + "expenditure: " + d.expenditure + "\n" + outcome_label + ": " + variable(d);
 	  });
 
       // Update the annotations
@@ -257,10 +250,8 @@
 	  const x_ranking = by_expenditure.findIndex(d => d.code == 'USA') + 1;
 	  const by_outcome = data.sort(function(a, b){return variable(b) - variable(a)});
 	  const y_ranking = by_outcome.findIndex(d => d.code == 'USA') + 1;
-	  const outcome_label = (variable == life_expectancy) ? "life expectancy"
-		: (variable == mr_infant) ? "infant survival rate" : "maternal survival rate";
 	  
-	  const type = d3.annotationLabel
+	  const type = d3.annotationCalloutElbow
 	  const annotations = [{
 	      note: {
 		  label: "#" + x_ranking + " in expenditure #" + y_ranking + " in " + outcome_label,
@@ -272,7 +263,7 @@
 	      dx: -150
 	  }];
 	  const makeAnnotations = d3.annotation()
-		.editMode(true)
+		.editMode(false)
 		.notePadding(15)
 		.type(type)
 		.accessors({
